@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 3
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      # initContainers:
+      # - name: wait-for-db-connection
+      #   image: busybox:latest
+      #   command: ['sh', '-c', 'until nslookup db-service.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for db-service; sleep 2; done']
+
+      containers:
+      - name: api
+        image: muhammadarham/auth-api:latest
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        ports:
+        - containerPort: 3000
+        envFrom:
+          - configMapRef:
+              name: authapi-configmap
+          - secretRef:
+              name: authapi-secret
