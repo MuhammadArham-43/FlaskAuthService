@@ -1,0 +1,43 @@
+services:
+    database:
+        image: postgres
+        restart: always
+        environment:
+            - POSTGRES_PASSWORD=/run/secrets/db_password
+            - POSTGRES_DB=auth
+        networks:
+            - auth-network
+        ports:
+            - 5432:5432
+        healthcheck:
+            test: ['CMD-SHELL', 'pg_isready -h localhost -U postgres']
+            interval: 5s
+            retries: 10
+
+    api:
+        build: .
+        restart: on-failure
+        command: ['python', 'server.py']
+        depends_on:
+            database:
+                condition: service_healthy
+        environment:
+            - AUTH_DB_USER=postgres
+            - AUTH_DB_HOST=database
+            - AUTH_DB_PASS=/run/secrets/db_password
+            - AUTH_DB_PORT=5432
+            - AUTH_DB_NAME=auth
+            - AUTH_SECRET_KEY=/run/secrets/secret_key
+        ports:
+            - 3000:3000
+        networks:
+            - auth-network
+
+networks:
+    auth-network:
+
+secrets:
+    db_password:
+        file: ./postgres_password.txt
+    secret_key:
+        file: secret_key.txt
